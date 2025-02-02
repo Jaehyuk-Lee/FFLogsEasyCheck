@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="packages\Microsoft.CodeAnalysis.FxCopAnalyzers.2.9.6\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props" Condition="Exists('packages\Microsoft.CodeAnalysis.FxCopAnalyzers.2.9.6\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props')" />
   <Import Project="packages\Microsoft.NetFramework.Analyzers.2.9.6\build\Microsoft.NetFramework.Analyzers.props" Condition="Exists('packages\Microsoft.NetFramework.Analyzers.2.9.6\build\Microsoft.NetFramework.Analyzers.props')" />
@@ -14,11 +14,12 @@
     <OutputType>Library</OutputType>
     <RootNamespace>FFLogsEasyCheck</RootNamespace>
     <AssemblyName>FFLogsEasyCheck</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -105,8 +106,8 @@
     <Error Condition="!Exists('packages\Microsoft.CodeAnalysis.FxCopAnalyzers.2.9.6\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.CodeAnalysis.FxCopAnalyzers.2.9.6\build\Microsoft.CodeAnalysis.FxCopAnalyzers.props'))" />
   </Target>
   <PropertyGroup>
-    <PostBuildEvent>cd E:\Projects\ffxiv\FFLogsEasyCheck\packages\ILMerge.3.0.29\tools\net452
-ilmerge E:\Projects\ffxiv\FFLogsEasyCheck\bin\Release\FFLogsEasyCheck.dll E:\Projects\ffxiv\FFLogsEasyCheck\bin\Release\AngleSharp.dll E:\Projects\ffxiv\FFLogsEasyCheck\bin\Release\Tulpep.NotificationWindow.dll /out:E:\Projects\ffxiv\FFLogsEasyCheck\bin\Release\FFLogsEasyCheckFull.dll /target:dll /ndebug
+    <PostBuildEvent>cd $(ProjectDir)packages\ILMerge.3.0.29\tools\net452
+ilmerge $(ProjectDir)bin\Release\FFLogsEasyCheck.dll $(ProjectDir)bin\Release\AngleSharp.dll $(ProjectDir)bin\Release\Tulpep.NotificationWindow.dll /out:$(ProjectDir)bin\Release\FFLogsEasyCheckFull.dll /target:dll /ndebug
 echo "Built FFLogsEasyCheckFull.dll to bin/Release"</PostBuildEvent>
   </PropertyGroup>
 </Project>

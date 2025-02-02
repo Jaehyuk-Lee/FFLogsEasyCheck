@@ -96,6 +96,7 @@ namespace FFLogsEasyCheck
         카벙클 = 301,
         모그리 = 302,
         톤베리 = 303,
+        펜리르 = 304,
     }
 
     public enum Regions
@@ -185,19 +186,19 @@ namespace FFLogsEasyCheck
         private async Task ParseLogForPartyInfo (LogLineEventArgs logInfo)
         {
             var log = logInfo.logLine;
-            AddLineToLog(log);
+            // AddLineToLog(log);
             //2 for the pos after the ] then the space
             log = log.Substring(log.IndexOf(']') + 2);
             // `/echo DEBUG FFLEC`
             var debugFlag = log.Contains("DEBUG FFLEC");
-            var chocobotest = log.Contains("초코보 테스트");
+            var moogletest = log.Contains("모그리 테스트");
             var serverTest = log.Contains("타섭 테스트");
-            if (log.StartsWith("00:1039:") || log.StartsWith("00:2239:") || debugFlag || chocobotest || serverTest)
+            if (log.StartsWith("ChatLog 00:1039:") || log.StartsWith("ChatLog 00:2239:") || debugFlag || moogletest || serverTest)
             {
-                if (log.EndsWith(PartyJoinMessageFooter) || debugFlag || chocobotest || serverTest)
+                if (log.EndsWith(PartyJoinMessageFooter) || debugFlag || moogletest || serverTest)
                 {
-                    if (chocobotest) log = "00:2239:블러드트레일 님이 파티에 참가했습니다.";
-                    if (serverTest) log = "00:2239:남영일모그리 님이 파티에 참가했습니다.";
+                    if (moogletest) log = "ChatLog 00:2239:블러드트레일 님이 파티에 참가했습니다.";
+                    if (serverTest) log = "ChatLog 00:2239:남영일초코보 님이 파티에 참가했습니다.";
                     string serverName = "", characterName = "", regionName = "";
                     Servers server = Servers.Adamantoise;
                     if (!debugFlag)
@@ -228,13 +229,14 @@ namespace FFLogsEasyCheck
                             }
                         }
                         //Message type header is 8 chars long so we start at 9
-                        characterName = log.Substring(8, log.IndexOf(PartyJoinMessageFooter) - 8).Trim();
+                        // "ChatLog " is added from the new version of ACT log lines. So added 8. (8 + 8 = 16)
+                        characterName = log.Substring(16, log.IndexOf(PartyJoinMessageFooter) - 16).Trim();
                     }
                     else
                     {
-                        server = Servers.Typhon;
+                        server = Servers.Chocobo;
                         serverName = Enum.GetName(typeof(Servers), server);
-                        characterName = "Whopper Dragon";
+                        characterName = "Yoshi'p Sampo";
                     }
                     regionName = Enum.GetName(typeof(Regions), GetRegionFromServer(server));
                     serverName = TranslateServer(serverName);
@@ -309,8 +311,8 @@ namespace FFLogsEasyCheck
                 popup.TitleColor = Color.White;
                 popup.TitleFont = new Font("Power Green", 10, FontStyle.Bold);
                 popup.ContentFont = new Font("Arial", 8, FontStyle.Regular);
-                popup.UseDarkBodyGradient = true;
-                popup.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.BackwardDiagonal;
+                //popup.UseDarkBodyGradient = true;
+                //popup.GradientMode = System.Drawing.Drawing2D.LinearGradientMode.BackwardDiagonal;
                 popup.GradientPower = 75;
                 //p is the popup sending itself back with empty args
                 if(OnClick != null)
@@ -490,21 +492,24 @@ namespace FFLogsEasyCheck
             }
         }
 
-        public string TranslateServer (string server)
+        public static string TranslateServer (string server)
         {
             switch (server)
             {
                 case "초코보":
-                    server = "Chocobo";
+                    server = "chocobo";
                     break;
                 case "카벙클":
-                    server = "Carbuncle";
+                    server = "carbuncle";
                     break;
                 case "모그리":
-                    server = "Moogle";
+                    server = "moogle";
                     break;
                 case "톤베리":
-                    server = "Tonberry";
+                    server = "tonberry";
+                    break;
+                case "펜리르":
+                    server = "fenrir";
                     break;
             }
             return server;
