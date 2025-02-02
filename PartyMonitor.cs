@@ -90,19 +90,27 @@ namespace FFLogsEasyCheck
         Unicorn = 228,
         Valefor = 229,
         Yojimbo = 230,
-        Zeromus = 231
+        Zeromus = 231,
+        // KR
+        초코보 = 300,
+        카벙클 = 301,
+        모그리 = 302,
+        톤베리 = 303,
     }
 
     public enum Regions
     {
         NA = 000,
         EU = 100,
-        JP = 200
+        JP = 200,
+        KR = 300,
     }
 
     public partial class PartyMonitor : UserControl, IActPluginV1
     {
-        private const string PartyJoinMessageFooter = "joins the party.";
+        private string PartyJoinMessageFooter = "joins the party.";
+        private const string PartyJoinMessageFooterEn = "joins the party.";
+        private const string PartyJoinMessageFooterKr = " 님이 파티에 참가했습니다.";
         private readonly string settingsFile = Path.Combine(ActGlobals.oFormActMain.AppDataFolder.FullName,
             "Config\\FFlLogsEasyCheck.config.xml");
 
@@ -177,14 +185,19 @@ namespace FFLogsEasyCheck
         private async Task ParseLogForPartyInfo (LogLineEventArgs logInfo)
         {
             var log = logInfo.logLine;
+            AddLineToLog(log);
             //2 for the pos after the ] then the space
             log = log.Substring(log.IndexOf(']') + 2);
             // `/echo DEBUG FFLEC`
             var debugFlag = log.Contains("DEBUG FFLEC");
-            if (log.StartsWith("00:1039:") || log.StartsWith("00:2239:") || debugFlag)
+            var chocobotest = log.Contains("초코보 테스트");
+            var serverTest = log.Contains("타섭 테스트");
+            if (log.StartsWith("00:1039:") || log.StartsWith("00:2239:") || debugFlag || chocobotest || serverTest)
             {
-                if (log.EndsWith(PartyJoinMessageFooter) || debugFlag)
+                if (log.EndsWith(PartyJoinMessageFooter) || debugFlag || chocobotest || serverTest)
                 {
+                    if (chocobotest) log = "00:2239:블러드트레일 님이 파티에 참가했습니다.";
+                    if (serverTest) log = "00:2239:남영일모그리 님이 파티에 참가했습니다.";
                     string serverName = "", characterName = "", regionName = "";
                     Servers server = Servers.Adamantoise;
                     if (!debugFlag)
@@ -202,7 +215,7 @@ namespace FFLogsEasyCheck
                         }
                         if (serverName == "")
                         {
-                            if (ServerDropdown.SelectedIndex > 0)
+                            if (ServerDropdown.SelectedIndex >= 0)
                             {
                                 serverName = Enum.GetName(typeof(Servers), ServerDropdown.SelectedItem);
                                 server = (Servers)ServerDropdown.SelectedItem;
@@ -219,28 +232,47 @@ namespace FFLogsEasyCheck
                     }
                     else
                     {
-                        server = Servers.Chocobo;
+                        server = Servers.Typhon;
                         serverName = Enum.GetName(typeof(Servers), server);
-                        characterName = "Yoshi'p Sampo";
+                        characterName = "Whopper Dragon";
                     }
                     regionName = Enum.GetName(typeof(Regions), GetRegionFromServer(server));
+                    serverName = TranslateServer(serverName);
                     var encodedRegion = Uri.EscapeUriString(regionName);
                     var encodedName = Uri.EscapeUriString(characterName);
                     var encodedServer = Uri.EscapeUriString(serverName);
-                    var url = $"https://www.fflogs.com/character/{encodedRegion}/{encodedServer}/{encodedName}";
-                    string title = $"{characterName} ({serverName} {regionName}) joins the party!";
+                    string url;
+                    string title;
+                    if (regionName == "KR")
+                    {
+                        url = $"https://ko.fflogs.com/character/{encodedRegion}/{encodedServer}/{encodedName}";
+                        title = $"{characterName} ({serverName} {regionName}) 이 파티에 참가했습니다!";
+                    }
+                    else
+                    {
+                        url = $"https://www.fflogs.com/character/{encodedRegion}/{encodedServer}/{encodedName}";
+                        title = $"{characterName} ({serverName} {regionName}) joins the party!";
+                    }
                     //Add to the ACT window text log
                     AddLineToLog(title + $" ({url})");
                     //Show Notification
                     if (showNotificationBox.Checked)
                     {
-                        var rankData = await ScrapeProfileData(url);
-                        Image profilePic = null;
-                        if(rankData != null)
-                            profilePic = DownloadProfilePic(rankData.profilePicUrl);
-                        var rankDataCorrupt = rankData == null || string.IsNullOrEmpty(rankData.job) || rankData.rank == -1 || rankData.allStarPoints == -1;
-                        var body = rankDataCorrupt ? "Could not retrieve rank data." : $"{rankData.job} - Rank {rankData.rank} ({rankData.allStarPoints})\n\nClick Here for Full Logs!";
-                        ShowPopup(title, body, profilePic, OnClick: () => Process.Start(url));
+                        if (regionName == "KR")
+                        {
+                            var body = "한국 서버는 팝업 알림이 지원되지 않습니다.\n\n전체 로그를 확인하려면 클릭하세요!";
+                            ShowPopup(title, body, null, OnClick: () => Process.Start(url));
+                        }
+                        else
+                        {
+                            var rankData = await ScrapeProfileData(url);
+                            Image profilePic = null;
+                            if (rankData != null)
+                                profilePic = DownloadProfilePic(rankData.profilePicUrl);
+                            var rankDataCorrupt = rankData == null || string.IsNullOrEmpty(rankData.job) || rankData.rank == -1 || rankData.allStarPoints == -1;
+                            var body = rankDataCorrupt ? "Could not retrieve rank data." : $"{rankData.job} - Rank {rankData.rank} ({rankData.allStarPoints})\n\nClick Here for Full Logs!";
+                            ShowPopup(title, body, profilePic, OnClick: () => Process.Start(url));
+                        }
                     }
                     //Auto Open
                     if (autoOpenLogsBox.Checked)
@@ -415,7 +447,8 @@ namespace FFLogsEasyCheck
             var i = (int)server;
             if (i >= (int)Regions.NA && i < (int)Regions.EU) return Regions.NA;
             else if (i >= (int)Regions.EU && i < (int)Regions.JP) return Regions.EU;
-            return Regions.JP;
+            else if (i >= (int)Regions.JP && i < (int)Regions.KR) return Regions.JP;
+            return Regions.KR;
         }
 
         private void RegionDropdown_SelectedIndexChanged (object sender, EventArgs e)
@@ -428,23 +461,53 @@ namespace FFLogsEasyCheck
                 default:
                     ServerDropdown.SelectedIndex = -1;
                     ServerDropdown.Enabled = false;
+                    PartyJoinMessageFooter = PartyJoinMessageFooterEn;
                     break;
 
                 case Regions.NA:
                     ServerDropdown.Enabled = true;
                     ServerDropdown.Items.AddRange(servers.Where(s => (int)s >= (int)Regions.NA && (int)s < (int)Regions.EU).ToArray());
+                    PartyJoinMessageFooter = PartyJoinMessageFooterEn;
                     break;
 
                 case Regions.EU:
                     ServerDropdown.Enabled = true;
                     ServerDropdown.Items.AddRange(servers.Where(s => (int)s >= (int)Regions.EU && (int)s < (int)Regions.JP).ToArray());
+                    PartyJoinMessageFooter = PartyJoinMessageFooterEn;
                     break;
 
                 case Regions.JP:
                     ServerDropdown.Enabled = true;
-                    ServerDropdown.Items.AddRange(servers.Where(s => (int)s >= (int)Regions.JP).ToArray());
+                    ServerDropdown.Items.AddRange(servers.Where(s => (int)s >= (int)Regions.JP && (int)s < (int)Regions.KR).ToArray());
+                    PartyJoinMessageFooter = PartyJoinMessageFooterEn;
+                    break;
+
+                case Regions.KR:
+                    ServerDropdown.Enabled = true;
+                    ServerDropdown.Items.AddRange(servers.Where(s => (int)s >= (int)Regions.KR).ToArray());
+                    PartyJoinMessageFooter = PartyJoinMessageFooterKr;
                     break;
             }
+        }
+
+        public string TranslateServer (string server)
+        {
+            switch (server)
+            {
+                case "초코보":
+                    server = "Chocobo";
+                    break;
+                case "카벙클":
+                    server = "Carbuncle";
+                    break;
+                case "모그리":
+                    server = "Moogle";
+                    break;
+                case "톤베리":
+                    server = "Tonberry";
+                    break;
+            }
+            return server;
         }
 
         private void ServerDropdown_SelectedIndexChanged (object sender, EventArgs e)
@@ -465,6 +528,11 @@ namespace FFLogsEasyCheck
         private void autoOpenLogsBox_CheckedChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void buttonClearLog_Click(object sender, EventArgs e)
+        {
+            logTextBox.Text = "";
         }
     }
 }
